@@ -33,14 +33,18 @@ class ImageProjModel(torch.nn.Module):
 
         self.cross_attention_dim = cross_attention_dim
         self.clip_extra_context_tokens = clip_extra_context_tokens
+        #将clip embedding 投影到 新空间
         self.proj = torch.nn.Linear(clip_embeddings_dim, self.clip_extra_context_tokens * cross_attention_dim)
         self.norm = torch.nn.LayerNorm(cross_attention_dim)
 
     def forward(self, image_embeds):
         embeds = image_embeds
+        #reshape将输出重塑为三维向量，-1根据别的维度决定大小
         clip_extra_context_tokens = self.proj(embeds).reshape(
             -1, self.clip_extra_context_tokens, self.cross_attention_dim
         )
+        #clip_extra_context_tokens形状为[batch_size, self.clip_extra_context_tokens, self.cross_attention_dim]。
+        #该操作把线性层的平面输出分割成一组向量self.clip_extra_context_tokens，每个向量都是self.cross_attention_dim维度的
         clip_extra_context_tokens = self.norm(clip_extra_context_tokens)
         return clip_extra_context_tokens
 
@@ -168,7 +172,7 @@ class IPAdapter:
     ):
         self.set_scale(scale)
 
-        if pil_image is not None:
+        if pil_images is not None:
             num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
         else:
             num_prompts = clip_image_embeds.size(0)
@@ -244,14 +248,14 @@ class IPAdapterXL(IPAdapter):
         if not isinstance(negative_prompt, List):
             negative_prompt = [negative_prompt] * num_prompts
 
-        image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image)
+        image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image)#无条件和有条件的embedding？
         bs_embed, seq_len, _ = image_prompt_embeds.shape
-        image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)
-        image_prompt_embeds = image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
+        image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)#？数据增强？在第二个维度上进行复制，不改变其他维度。这通常用于创建多个样本的副本，可能是为了数据增强或为了生成多个预测？
+        image_prompt_embeds = image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)#将 batch size 从 bs_embed 增加到 bs_embed * num_samples
         uncond_image_prompt_embeds = uncond_image_prompt_embeds.repeat(1, num_samples, 1)
         uncond_image_prompt_embeds = uncond_image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
 
-        with torch.inference_mode():
+        with torch.inference_mode():#不计算梯度的上下文中，将文本编码
             (
                 prompt_embeds,
                 negative_prompt_embeds,
@@ -263,7 +267,7 @@ class IPAdapterXL(IPAdapter):
                 do_classifier_free_guidance=True,
                 negative_prompt=negative_prompt,
             )
-            prompt_embeds = torch.cat([prompt_embeds, image_prompt_embeds], dim=1)
+            prompt_embeds = torch.cat([prompt_embeds, image_prompt_embeds], dim=1)#正面+负面+图像
             negative_prompt_embeds = torch.cat([negative_prompt_embeds, uncond_image_prompt_embeds], dim=1)
 
         generator = torch.Generator(self.device).manual_seed(seed) if seed is not None else None
