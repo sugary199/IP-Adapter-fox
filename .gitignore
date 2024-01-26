@@ -1,0 +1,14 @@
+# 忽略所有 .log 文件
+*.log
+*.bin
+*.safetensors
+
+# 忽略特定目录
+node_modules/
+build/
+ip_adapter/__pycache__/
+# 忽略特定文件
+config.env
+
+# 但是不忽略某个特定 .log 文件
+!important.log
