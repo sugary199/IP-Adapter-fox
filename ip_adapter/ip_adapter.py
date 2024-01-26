@@ -141,15 +141,21 @@ class IPAdapter:
 
     @torch.inference_mode()
     def get_image_embeds(self, pil_image=None, clip_image_embeds=None):
+        print(222)
         if pil_image is not None:
             if isinstance(pil_image, Image.Image):
                 pil_image = [pil_image]
+            # 预处理和编码
             clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
             clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.float16)).image_embeds
+            # 计算多张图片embedding的平均值
+            avg_clip_image_embeds = clip_image_embeds.mean(dim=0,keepdim=True)
         else:
             clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
-        image_prompt_embeds = self.image_proj_model(clip_image_embeds)
-        uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
+            avg_clip_image_embeds = clip_image_embeds
+
+        image_prompt_embeds = self.image_proj_model(avg_clip_image_embeds)
+        uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(avg_clip_image_embeds))
         return image_prompt_embeds, uncond_image_prompt_embeds
 
     def set_scale(self, scale):
@@ -236,9 +242,12 @@ class IPAdapterXL(IPAdapter):
     ):
         self.set_scale(scale)
 
-        num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
+        print(111)
+        # 这里暂时修改，写死只有一个prompt
+        # num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
+        num_prompts = 1
 
-        if prompt is None:
+        if prompt is None: 
             prompt = "best quality, high quality"
         if negative_prompt is None:
             negative_prompt = "monochrome, lowres, bad anatomy, worst quality, low quality"

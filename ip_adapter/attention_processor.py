@@ -24,23 +24,23 @@ class AttnProcessor(nn.Module):
         attention_mask=None,
         temb=None,
     ):
-        print("call attnProcessor")
+        # print("call attnProcessor")
         residual = hidden_states
         # print(f"Initial hidden_states shape: {hidden_states.shape}")
         # print(f"Initial hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         if attn.spatial_norm is not None:
             hidden_states = attn.spatial_norm(hidden_states, temb)
-            print(f"After spatial_norm, hidden_states shape: {hidden_states.shape}")
-            print(f"After spatial_norm, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+            # print(f"After spatial_norm, hidden_states shape: {hidden_states.shape}")
+            # print(f"After spatial_norm, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         input_ndim = hidden_states.ndim
 
         if input_ndim == 4:
             batch_size, channel, height, width = hidden_states.shape
             hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
-            print(f"After view and transpose, hidden_states shape: {hidden_states.shape}")
-            print(f"After view and transpose, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+            # print(f"After view and transpose, hidden_states shape: {hidden_states.shape}")
+            # print(f"After view and transpose, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         batch_size, sequence_length, _ = (
             hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
@@ -49,19 +49,19 @@ class AttnProcessor(nn.Module):
 
         if attn.group_norm is not None:
             hidden_states = attn.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
-            print(f"After group norm,hidden_states shape:{hidden_states.shape()}")
-            print(f"After group norm,hidden_states mean:{hidden_states.mean()},vairance:{hidden_states.var()},std:{hidden_states.std()}")
+            # print(f"After group norm,hidden_states shape:{hidden_states.shape()}")
+            # print(f"After group norm,hidden_states mean:{hidden_states.mean()},vairance:{hidden_states.var()},std:{hidden_states.std()}")
 
         query = attn.to_q(hidden_states)
-        print(f"Query shape: {query.shape}")
-        print(f"Query mean: {query.mean()}, variance: {query.var()}, std: {query.std()}")
+        # print(f"Query shape: {query.shape}")
+        # print(f"Query mean: {query.mean()}, variance: {query.var()}, std: {query.std()}")
 
         if encoder_hidden_states is None:
             encoder_hidden_states = hidden_states
         elif attn.norm_cross:
             encoder_hidden_states = attn.norm_encoder_hidden_states(encoder_hidden_states)
-        print(f"encoder_hidden_states shape: {encoder_hidden_states.shape}")
-        print(f"encoder_hidden_states mean: {encoder_hidden_states.mean()}, variance: {encoder_hidden_states.var()}, std: {encoder_hidden_states.std()}")
+        # print(f"encoder_hidden_states shape: {encoder_hidden_states.shape}")
+        # print(f"encoder_hidden_states mean: {encoder_hidden_states.mean()}, variance: {encoder_hidden_states.var()}, std: {encoder_hidden_states.std()}")
 
   
         key = attn.to_k(encoder_hidden_states)
@@ -70,40 +70,40 @@ class AttnProcessor(nn.Module):
         query = attn.head_to_batch_dim(query)
         key = attn.head_to_batch_dim(key)
         value = attn.head_to_batch_dim(value)
-        print(f"Key shape: {key.shape}, Value shape: {value.shape}")
-        print(f"Key mean: {key.mean()}, variance: {key.var()}, std: {key.std()}")
-        print(f"Value mean: {value.mean()}, variance: {value.var()}, std: {value.std()}")
+        # print(f"Key shape: {key.shape}, Value shape: {value.shape}")
+        # print(f"Key mean: {key.mean()}, variance: {key.var()}, std: {key.std()}")
+        # print(f"Value mean: {value.mean()}, variance: {value.var()}, std: {value.std()}")
 
         attention_probs = attn.get_attention_scores(query, key, attention_mask)
         hidden_states = torch.bmm(attention_probs, value)
         hidden_states = attn.batch_to_head_dim(hidden_states)
-        print(f"After attention, hidden_states shape: {hidden_states.shape}")
-        print(f"After attention, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+        # print(f"After attention, hidden_states shape: {hidden_states.shape}")
+        # print(f"After attention, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         # linear proj
         hidden_states = attn.to_out[0](hidden_states)
-        print(f"After linear proj, hidden_states shape: {hidden_states.shape}")
-        print(f"After linear proj, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+        # print(f"After linear proj, hidden_states shape: {hidden_states.shape}")
+        # print(f"After linear proj, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         # dropout
         hidden_states = attn.to_out[1](hidden_states)
-        print(f"After dropout, hidden_states shape: {hidden_states.shape}")
-        print(f"After dropout, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+        # print(f"After dropout, hidden_states shape: {hidden_states.shape}")
+        # print(f"After dropout, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
 
         if input_ndim == 4:
             hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
-            print(f"After transpose and reshape, hidden_states shape: {hidden_states.shape}")
-            print(f"After transpose and reshape, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std:  {hidden_states.std()}")
+            # print(f"After transpose and reshape, hidden_states shape: {hidden_states.shape}")
+            # print(f"After transpose and reshape, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std:  {hidden_states.std()}")
 
         if attn.residual_connection:
             hidden_states = hidden_states + residual
-            print(f"After residual connection, hidden_states shape: {hidden_states.shape}")
-            print(f"After residual connection, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+            # print(f"After residual connection, hidden_states shape: {hidden_states.shape}")
+            # print(f"After residual connection, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         hidden_states = hidden_states / attn.rescale_output_factor
-        print(f"Final output, hidden_states shape: {hidden_states.shape}")
-        print(f"Final output, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
+        # print(f"Final output, hidden_states shape: {hidden_states.shape}")
+        # print(f"Final output, hidden_states mean: {hidden_states.mean()}, variance: {hidden_states.var()}, std: {hidden_states.std()}")
 
         return hidden_states
 
@@ -141,7 +141,7 @@ class IPAttnProcessor(nn.Module):
         attention_mask=None,
         temb=None,
     ):
-        print("call IPAttnProcessor")
+        # print("call IPAttnProcessor")
         residual = hidden_states
 
         if attn.spatial_norm is not None:
@@ -172,8 +172,8 @@ class IPAttnProcessor(nn.Module):
                 encoder_hidden_states[:, :end_pos, :],
                 encoder_hidden_states[:, end_pos:, :],
             )
-            print(f"encoder_hidden_states shape: {encoder_hidden_states.shape}")
-            print(f"ip_hidden_states shape: {ip_hidden_states.shape}")
+            # print(f"encoder_hidden_states shape: {encoder_hidden_states.shape}")
+            # print(f"ip_hidden_states shape: {ip_hidden_states.shape}")
             if attn.norm_cross:
                 encoder_hidden_states = attn.norm_encoder_hidden_states(encoder_hidden_states)
 
@@ -240,7 +240,7 @@ class AttnProcessor2_0(torch.nn.Module):
         attention_mask=None,
         temb=None,
     ):
-        print("call AttnProcessor2_0")
+        # print("call AttnProcessor2_0")
         residual = hidden_states
 
         if attn.spatial_norm is not None:
@@ -344,12 +344,12 @@ class IPAttnProcessor2_0(torch.nn.Module):
         attention_mask=None,
         temb=None,
     ):
-        print("call IPAttnProcessor2_0")
+        # print("call IPAttnProcessor2_0")
         residual = hidden_states
         # Print the shape, variance, and std of hidden_states
-        print(f"Shape of hidden_states: {hidden_states.shape}")
-        print(f"Variance of hidden_states: {hidden_states.var()}")
-        print(f"Standard Deviation of hidden_states: {hidden_states.std()}")
+        # print(f"Shape of hidden_states: {hidden_states.shape}")
+        # print(f"Variance of hidden_states: {hidden_states.var()}")
+        # print(f"Standard Deviation of hidden_states: {hidden_states.std()}")
 
         if attn.spatial_norm is not None:
             hidden_states = attn.spatial_norm(hidden_states, temb)
@@ -360,7 +360,7 @@ class IPAttnProcessor2_0(torch.nn.Module):
             batch_size, channel, height, width = hidden_states.shape
             hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
         # Print the shape after reshaping for 2D attention
-        print(f"Shape of hidden_states after reshaping for 2D attention: {hidden_states.shape}")
+        # print(f"Shape of hidden_states after reshaping for 2D attention: {hidden_states.shape}")
 
         batch_size, sequence_length, _ = (
             hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
@@ -376,7 +376,7 @@ class IPAttnProcessor2_0(torch.nn.Module):
             hidden_states = attn.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
 
         query = attn.to_q(hidden_states)
-        print(f"Shape of query: {query.shape}")
+        # print(f"Shape of query: {query.shape}")
 
         if encoder_hidden_states is None:
             encoder_hidden_states = hidden_states
@@ -389,11 +389,11 @@ class IPAttnProcessor2_0(torch.nn.Module):
             )
             if attn.norm_cross:
                 encoder_hidden_states = attn.norm_encoder_hidden_states(encoder_hidden_states)
-        print(f"Shape of encdoer_hidden_states: {encoder_hidden_states.shape}")
+        # print(f"Shape of encdoer_hidden_states: {encoder_hidden_states.shape}")
         key = attn.to_k(encoder_hidden_states)
         value = attn.to_v(encoder_hidden_states)
-        print(f"Shape of key: {key.shape}")
-        print(f"Shape of value: {value.shape}")
+        # print(f"Shape of key: {key.shape}")
+        # print(f"Shape of value: {value.shape}")
         inner_dim = key.shape[-1]
         head_dim = inner_dim // attn.heads
 
@@ -445,9 +445,9 @@ class IPAttnProcessor2_0(torch.nn.Module):
             hidden_states = hidden_states + residual
 
         hidden_states = hidden_states / attn.rescale_output_factor
-        print(f"Final output shape: {hidden_states.shape}")
-        print(f"Final output variance: {hidden_states.var()}")
-        print(f"Final output standard deviation: {hidden_states.std()}")
+        # print(f"Final output shape: {hidden_states.shape}")
+        # print(f"Final output variance: {hidden_states.var()}")
+        # print(f"Final output standard deviation: {hidden_states.std()}")
 
         return hidden_states
 
@@ -463,7 +463,7 @@ class CNAttnProcessor:
 
     def __call__(self, attn, hidden_states, encoder_hidden_states=None, attention_mask=None, temb=None):
         residual = hidden_states
-        print("call CNAttnProcessor")
+        # print("call CNAttnProcessor")
         if attn.spatial_norm is not None:
             hidden_states = attn.spatial_norm(hidden_states, temb)
 
@@ -537,7 +537,7 @@ class CNAttnProcessor2_0:
         temb=None,
     ):
         residual = hidden_states
-        print("call CNAttnProcessor")
+        # print("call CNAttnProcessor")
         if attn.spatial_norm is not None:
             hidden_states = attn.spatial_norm(hidden_states, temb)
 
